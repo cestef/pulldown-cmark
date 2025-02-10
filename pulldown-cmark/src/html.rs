@@ -53,10 +53,15 @@ struct HtmlWriter<'a, I, W> {
     numbers: HashMap<CowStr<'a>, usize>,
 }
 
-impl<'a, I, W> HtmlWriter<'a, I, W>
+pub trait ToClass<'a> {
+    fn to_class(&self) -> &'a str;
+}
+
+impl<'a, I, W, AD> HtmlWriter<'a, I, W>
 where
-    I: Iterator<Item = Event<'a>>,
+    I: Iterator<Item = Event<'a, AD>>,
     W: StrWrite,
+    AD: ToClass<'a>,
 {
     fn new(iter: I, writer: W) -> Self {
         Self {
@@ -156,7 +161,7 @@ where
     }
 
     /// Writes the start of an HTML tag.
-    fn start_tag(&mut self, tag: Tag<'a>) -> Result<(), W::Error> {
+    fn start_tag(&mut self, tag: Tag<'a, AD>) -> Result<(), W::Error> {
         match tag {
             Tag::HtmlBlock => Ok(()),
             Tag::Paragraph => {
@@ -238,13 +243,7 @@ where
             Tag::BlockQuote(kind) => {
                 let class_str = match kind {
                     None => "",
-                    Some(kind) => match kind {
-                        BlockQuoteKind::Note => " class=\"markdown-alert-note\"",
-                        BlockQuoteKind::Tip => " class=\"markdown-alert-tip\"",
-                        BlockQuoteKind::Important => " class=\"markdown-alert-important\"",
-                        BlockQuoteKind::Warning => " class=\"markdown-alert-warning\"",
-                        BlockQuoteKind::Caution => " class=\"markdown-alert-caution\"",
-                    },
+                    Some(kind) => kind.to_class(),
                 };
                 if self.end_newline {
                     self.write(&format!("<blockquote{}>\n", class_str))
@@ -390,7 +389,7 @@ where
         }
     }
 
-    fn end_tag(&mut self, tag: TagEnd) -> Result<(), W::Error> {
+    fn end_tag(&mut self, tag: TagEnd<AD>) -> Result<(), W::Error> {
         match tag {
             TagEnd::HtmlBlock => {}
             TagEnd::Paragraph => {
@@ -547,9 +546,10 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn push_html<'a, I>(s: &mut String, iter: I)
+pub fn push_html<'a, I, AD>(s: &mut String, iter: I)
 where
-    I: Iterator<Item = Event<'a>>,
+    I: Iterator<Item = Event<'a, AD>>,
+    AD: ToClass<'a>,
 {
     write_html_fmt(s, iter).unwrap()
 }
@@ -622,10 +622,11 @@ where
 /// </ul>
 /// "#);
 /// ```
-pub fn write_html_fmt<'a, I, W>(writer: W, iter: I) -> std::fmt::Result
+pub fn write_html_fmt<'a, I, W, AD>(writer: W, iter: I) -> std::fmt::Result
 where
-    I: Iterator<Item = Event<'a>>,
+    I: Iterator<Item = Event<'a, AD>>,
     W: std::fmt::Write,
+    AD: ToClass<'a>,
 {
     HtmlWriter::new(iter, FmtWriter(writer)).run()
 }

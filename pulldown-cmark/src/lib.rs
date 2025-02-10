@@ -77,6 +77,7 @@
 #![cfg_attr(not(feature = "simd"), forbid(unsafe_code))]
 #![warn(missing_debug_implementations)]
 
+use html::ToClass;
 #[cfg(feature = "serde")]
 use serde::{Deserialize, Serialize};
 
@@ -139,6 +140,18 @@ pub enum BlockQuoteKind {
     Important,
     Warning,
     Caution,
+}
+
+impl ToClass<'_> for BlockQuoteKind {
+    fn to_class(&self) -> &'static str {
+        match self {
+            BlockQuoteKind::Note => "markdown-alert-note",
+            BlockQuoteKind::Tip => "markdown-alert-tip",
+            BlockQuoteKind::Important => "markdown-alert-important",
+            BlockQuoteKind::Warning => "markdown-alert-warning",
+            BlockQuoteKind::Caution => "markdown-alert-caution",
+        }
+    }
 }
 
 /// Metadata block kind.
