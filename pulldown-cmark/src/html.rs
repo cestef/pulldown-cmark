@@ -24,7 +24,7 @@ use std::collections::HashMap;
 
 use crate::strings::CowStr;
 use crate::Event::*;
-use crate::{Alignment, BlockQuoteKind, CodeBlockKind, Event, LinkType, Tag, TagEnd};
+use crate::{Alignment, CodeBlockKind, Event, LinkType, Tag, TagEnd};
 use pulldown_cmark_escape::{
     escape_href, escape_html, escape_html_body_text, FmtWriter, IoWriter, StrWrite,
 };
@@ -241,10 +241,7 @@ where
                 }
             }
             Tag::BlockQuote(kind) => {
-                let class_str = match kind {
-                    None => "",
-                    Some(kind) => kind.to_class(),
-                };
+                let class_str = kind.map(|k| k.to_class()).unwrap_or("");
                 if self.end_newline {
                     self.write(&format!("<blockquote{}>\n", class_str))
                 } else {
